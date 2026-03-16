@@ -1,0 +1,7 @@
+The goal of the project is to create a solution for Linda and her dark home. We are designing a system that allows her to press a button and two lights will turn on, each for different predefined lengths of time (30 seconds and 60 seconds).
+
+This program works by first creating the necessary variables as integers
+
+Then the setup runs, which defines how the button and lights work in relation to the code
+
+Then the program is constantly checking to see if the button is pressed, and when it is pressed, the sequence runs.
