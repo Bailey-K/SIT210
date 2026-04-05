@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Linda's Care Portal - SIT210</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; padding: 40px; }
+        .card { background: white; max-width: 500px; margin: auto; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: #00717f; margin-bottom: 10px; }
+        .btn { width: 80%; padding: 15px; margin: 10px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 10px; transition: 0.2s; }
+        .living { background: #ffd700; }
+        .bathroom { background: #00a8e8; color: white; }
+        .closet { background: #4caf50; color: white; }
+        .btn:active { transform: scale(0.98); }
+        #log { margin-top: 20px; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Carer Interface</h1>
+        <p>Toggle Linda's room lights below:</p>
+        
+        <button class="btn living" onclick="toggleLight('livingRoom_Light')">Living Room</button>
+        <button class="btn bathroom" onclick="toggleLight('bathroom_Light')">Bathroom</button>
+        <button class="btn closet" onclick="toggleLight('closet_Light')">Closet</button>
+
+        <div id="log">Waiting for action...</div>
+    </div>
+
+    <script>
+        // UPDATE THESE FROM YOUR ARDUINO CLOUD SETTINGS
+        const clientId = "Q4DxGkUMyaAWfYk6czQroJYceQ6rWxOF";
+        const clientSecret = "JCVYQxVTLGGrmUKXVj5cuzt5Quw6gM4MpcTz3XaUx7vKFEth7rpjtc05OJ7DYg6I";
+        const thingId = "14ff3b85-1def-4dcb-935e-e8f4defe4669"; // Found in the Thing URL
+
+        async function toggleLight(variableName) {
+            const log = document.getElementById('log');
+            log.innerText = "Processing request...";
+
+            try {
+                // STEP 1: Get Access Token (The "Handshake")
+                const authResponse = await fetch('https://api2.arduino.cc/iot/v1/clients/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        'grant_type': 'client_credentials',
+                        'client_id': clientId,
+                        'client_secret': clientSecret,
+                        'audience': 'https://api2.arduino.cc/iot'
+                    })
+                });
+                const authData = await authResponse.json();
+                const token = authData.access_token;
+
+                // STEP 2: Get current value to "Toggle" it
+                const propResponse = await fetch(`https://api2.arduino.cc/iot/v2/things/${thingId}/properties/${variableName}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const propData = await propResponse.json();
+                const newValue = !propData.last_value; // Invert the boolean
+
+                // STEP 3: Send the new value back to the Cloud
+                await fetch(`https://api2.arduino.cc/iot/v2/things/${thingId}/properties/${variableName}/publish`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({ value: newValue })
+                });
+
+                log.innerText = `Success: ${variableName} is now ${newValue ? 'ON' : 'OFF'}`;
+            } catch (err) {
+                console.error(err);
+                log.innerText = "Error: Connection failed.";
+            }
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
