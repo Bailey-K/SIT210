@@ -1,0 +1,49 @@
+import tkinter as tk
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+
+LED_PINS = {
+    "Living Room": 27,
+    "Bathroom": 22,
+    "Closet": 4
+}
+
+for pin in LED_PINS.values():
+    GPIO.setup(pin, GPIO.OUT)
+    GPIO.output(pin, GPIO.LOW)
+    
+def switch_led(pin):
+    for p in LED_PINS.values():
+        GPIO.output(p, GPIO.LOW)
+    GPIO.output(pin, GPIO.HIGH)
+
+def all_off():
+    for p in LED_PINS.values():
+        GPIO.output(p, GPIO.LOW)
+
+window = tk.Tk()
+window.title("Home Lighting Control")
+
+selected_room = tk.StringVar()
+
+for room, pin in LED_PINS.items():
+    tk.Radiobutton(
+        window,
+        text=room,
+        variable=selected_room,
+        value=room,
+        command=lambda p=pin: switch_led(p)
+    ).pack(anchor="w", padx=20, pady=5)
+
+tk.Radiobutton(
+    window,
+    text="Off",
+    variable=selected_room,
+    value="Off",
+    command=all_off
+).pack(anchor="w", padx=20, pady=5)
+
+tk.Button(window, text="Exit", command=lambda: [GPIO.cleanup(), window.destroy()]).pack(pady=10)
+
+window.mainloop()
