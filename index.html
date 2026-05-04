@@ -1,80 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
+    <title>SIT210 - Linda's Care Portal</title>
     <meta charset="UTF-8">
-    <title>Linda's Care Portal - SIT210</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; padding: 40px; }
-        .card { background: white; max-width: 500px; margin: auto; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        h1 { color: #00717f; margin-bottom: 10px; }
-        .btn { width: 80%; padding: 15px; margin: 10px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 10px; transition: 0.2s; }
-        .living { background: #ffd700; }
-        .bathroom { background: #00a8e8; color: white; }
-        .closet { background: #4caf50; color: white; }
-        .btn:active { transform: scale(0.98); }
-        #log { margin-top: 20px; font-size: 14px; color: #666; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; color: #333; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; font-size: 1.5rem; }
+        .light-control { border-bottom: 1px solid #eee; padding: 20px 0; display: flex; flex-direction: column; align-items: center; }
+        .light-control:last-child { border-bottom: none; }
+        h3 { margin-bottom: 15px; font-size: 1.1rem; }
+        .btn-group { display: flex; gap: 10px; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-on { background-color: #2ecc71; color: white; }
+        .btn-off { background-color: #e74c3c; color: white; }
+        button:hover { opacity: 0.8; transform: translateY(-1px); }
+        .status { margin-top: 12px; font-size: 0.9rem; color: #7f8c8d; }
+        #log { margin-top: 20px; font-size: 0.8rem; color: #95a5a6; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Carer Interface</h1>
-        <p>Toggle Linda's room lights below:</p>
-        
-        <button class="btn living" onclick="toggleLight('livingRoom_Light')">Living Room</button>
-        <button class="btn bathroom" onclick="toggleLight('bathroom_Light')">Bathroom</button>
-        <button class="btn closet" onclick="toggleLight('closet_Light')">Closet</button>
 
-        <div id="log">Waiting for action...</div>
+<div class="container">
+    <h1>Linda's House Control</h1>
+
+    <div class="light-control">
+        <h3>Living Room Light</h3>
+        <div class="btn-group">
+            <button class="btn-on" onclick="toggleLight('livingRoom_Light', true)">ON</button>
+            <button class="btn-off" onclick="toggleLight('livingRoom_Light', false)">OFF</button>
+        </div>
+        <p class="status">Status: <span id="livingRoom_Light_status">...</span></p>
     </div>
 
-    <script>
-        // UPDATE THESE FROM YOUR ARDUINO CLOUD SETTINGS
-        const clientId = "Q4DxGkUMyaAWfYk6czQroJYceQ6rWxOF";
-        const clientSecret = "JCVYQxVTLGGrmUKXVj5cuzt5Quw6gM4MpcTz3XaUx7vKFEth7rpjtc05OJ7DYg6I";
-        const thingId = "14ff3b85-1def-4dcb-935e-e8f4defe4669"; // Found in the Thing URL
+    <div class="light-control">
+        <h3>Bathroom Light</h3>
+        <div class="btn-group">
+            <button class="btn-on" onclick="toggleLight('bathroom_Light', true)">ON</button>
+            <button class="btn-off" onclick="toggleLight('bathroom_Light', false)">OFF</button>
+        </div>
+        <p class="status">Status: <span id="bathroom_Light_status">...</span></p>
+    </div>
 
-        async function toggleLight(variableName) {
-            const log = document.getElementById('log');
-            log.innerText = "Processing request...";
+    <div class="light-control">
+        <h3>Closet Light</h3>
+        <div class="btn-group">
+            <button class="btn-on" onclick="toggleLight('closet_Light', true)">ON</button>
+            <button class="btn-off" onclick="toggleLight('closet_Light', false)">OFF</button>
+        </div>
+        <p class="status">Status: <span id="closet_Light_status">...</span></p>
+    </div>
 
-            try {
-                // STEP 1: Get Access Token (The "Handshake")
-                const authResponse = await fetch('https://api2.arduino.cc/iot/v1/clients/token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                        'grant_type': 'client_credentials',
-                        'client_id': clientId,
-                        'client_secret': clientSecret,
-                        'audience': 'https://api2.arduino.cc/iot'
-                    })
-                });
-                const authData = await authResponse.json();
-                const token = authData.access_token;
+    <div id="log">Waiting for connection...</div>
+</div>
 
-                // STEP 2: Get current value to "Toggle" it
-                const propResponse = await fetch(`https://api2.arduino.cc/iot/v2/things/${thingId}/properties/${variableName}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const propData = await propResponse.json();
-                const newValue = !propData.last_value; // Invert the boolean
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-                // STEP 3: Send the new value back to the Cloud
-                await fetch(`https://api2.arduino.cc/iot/v2/things/${thingId}/properties/${variableName}/publish`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json' 
-                    },
-                    body: JSON.stringify({ value: newValue })
-                });
+<script>
+    // UPDATED CONFIGURATION
+    const firebaseConfig = {
+      apiKey: "AIzaSyBPfIHt8Ufaxzp9CENM4hnPk3ITMv9auZo",
+      authDomain: "sit210-task-4-2d.firebaseapp.com",
+      projectId: "sit210-task-4-2d",
+      // CRITICAL: The Singapore region must be specified in the URL
+      databaseURL: "https://sit210-task-4-2d-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
 
-                log.innerText = `Success: ${variableName} is now ${newValue ? 'ON' : 'OFF'}`;
-            } catch (err) {
-                console.error(err);
-                log.innerText = "Error: Connection failed.";
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    function toggleLight(room, state) {
+        document.getElementById('log').innerText = `Sending command to ${room}...`;
+        
+        // We write to 'lights/room_Name' to match your Arduino code
+        database.ref(`lights/${room}`).set(state)
+            .then(() => {
+                document.getElementById('log').innerText = "Command Sent Successfully";
+            })
+            .catch((error) => {
+                document.getElementById('log').innerText = "Error: " + error.message;
+            });
+    }
+
+    function listenForLightChanges(room) {
+        const lightRef = database.ref(`lights/${room}`);
+        lightRef.on('value', (snapshot) => {
+            const isLightOn = snapshot.val();
+            const statusElement = document.getElementById(`${room}_status`);
+            if (statusElement) {
+                statusElement.textContent = isLightOn ? 'ON' : 'OFF';
+                statusElement.style.color = isLightOn ? '#2ecc71' : '#e74c3c';
             }
-        }
-    </script>
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        listenForLightChanges('livingRoom_Light');
+        listenForLightChanges('bathroom_Light');
+        listenForLightChanges('closet_Light');
+        document.getElementById('log').innerText = "System Connected to Singapore Node";
+    });
+</script>
+
 </body>
-</html><!DOCTYPE html>
+</html>
